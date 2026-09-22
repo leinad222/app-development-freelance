@@ -777,7 +777,7 @@ a {
     }
 }
 
-+@media (max-width:500px) {
+@media (max-width:500px) {
     .announcement {
         font-size: 10px;
     }
