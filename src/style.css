@@ -1,7 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap');
 
 :root {
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
     color: #1d1d1f;
     background: #f5f5f7;
     font-synthesis: none;
@@ -52,8 +52,21 @@ input:focus-visible {
     text-decoration: none;
 }
 
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: #1d1d1f;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-decoration: none;
+}
+
 .logo span {
-    font-size: 18px;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: .08em;
 }
 
 .logo img {
@@ -460,7 +473,7 @@ input:focus-visible {
 .hero-label b {
     margin-top: 5px;
     color: #1d1d1f;
-    font: 500 14px 'Space Grotesk', sans-serif;
+    font: 500 14px -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
 .section,
