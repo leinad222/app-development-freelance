@@ -493,15 +493,23 @@ input:focus-visible {
 
 .category-filters {
     display: flex;
+    align-items: center;
     gap: 8px;
-    margin-bottom: 24px;
+    margin: 0 -4px 24px;
     overflow-x: auto;
-    padding-bottom: 5px;
-    scrollbar-width: thin;
+    padding: 10px 4px 14px;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+    overscroll-behavior-inline: contain;
+}
+
+.category-filters::-webkit-scrollbar {
+    display: none;
 }
 
 .category-filters button {
     flex: 0 0 auto;
+    min-height: 40px;
     border: 1px solid #d2d2d7;
     border-radius: 20px;
     padding: 9px 15px;
@@ -509,6 +517,7 @@ input:focus-visible {
     background: transparent;
     cursor: pointer;
     font-size: 13px;
+    scroll-snap-align: start;
     transition: color .2s, background .2s, border-color .2s;
 }
 
