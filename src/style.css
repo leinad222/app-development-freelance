@@ -693,7 +693,7 @@ a {
     font: 11px 'DM Mono', monospace;
 }
 
-+@media (max-width:800px) {
+@media (max-width:800px) {
 
     .nav,
     .hero,
