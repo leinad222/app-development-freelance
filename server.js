@@ -1,9 +1,10 @@
 import { createServer } from 'node:http';
-import { mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import Database from 'better-sqlite3';
 
 const databasePath = join(process.cwd(), 'data', 'aster.sqlite');
+const distPath = join(process.cwd(), 'dist');
 mkdirSync(dirname(databasePath), { recursive: true });
 const database = new Database(databasePath);
 database.pragma('journal_mode = WAL');
@@ -82,10 +83,9 @@ const sendJson = (response, status, payload) => {
 
 const server = createServer(async (request, response) => {
     const requestUrl = new URL(request.url, 'http://localhost');
-    response.setHeader('Content-Type', 'application/json');
-    response.setHeader('Access-Control-Allow-Origin', '*');
 
     if (requestUrl.pathname === '/api/products' && request.method === 'GET') {
+        response.setHeader('Content-Type', 'application/json');
         const query = requestUrl.searchParams.get('q')?.trim() ?? '';
         const pattern = `%${query}%`;
         const products = searchProducts.all(pattern, pattern, pattern);
@@ -94,17 +94,20 @@ const server = createServer(async (request, response) => {
     }
 
     if (requestUrl.pathname === '/api/account' && request.method === 'GET') {
+        response.setHeader('Content-Type', 'application/json');
         sendJson(response, 200, { account: getAccount.get(), cartCount: getCart.all().reduce((total, item) => total + item.quantity, 0) });
         return;
     }
 
     if (requestUrl.pathname === '/api/cart' && request.method === 'GET') {
+        response.setHeader('Content-Type', 'application/json');
         const items = getCart.all();
         sendJson(response, 200, { items, count: items.reduce((total, item) => total + item.quantity, 0) });
         return;
     }
 
     if (requestUrl.pathname === '/api/cart' && request.method === 'POST') {
+        response.setHeader('Content-Type', 'application/json');
         try {
             const body = await readBody(request);
             const productId = Number(body.productId);
@@ -122,13 +125,26 @@ const server = createServer(async (request, response) => {
 
     const cartItemMatch = requestUrl.pathname.match(/^\/api\/cart\/(\d+)$/);
     if (cartItemMatch && request.method === 'DELETE') {
+        response.setHeader('Content-Type', 'application/json');
         removeCartItem.run(Number(cartItemMatch[1]));
         sendJson(response, 200, { items: getCart.all() });
         return;
     }
 
+    if (request.method === 'GET' && existsSync(distPath)) {
+        const requestedFile = requestUrl.pathname === '/' ? 'index.html' : requestUrl.pathname.slice(1);
+        const filePath = join(distPath, requestedFile);
+        const safePath = filePath.startsWith(distPath) ? filePath : join(distPath, 'index.html');
+        const finalPath = existsSync(safePath) ? safePath : join(distPath, 'index.html');
+        const contentTypes = { '.css': 'text/css', '.js': 'text/javascript', '.html': 'text/html', '.svg': 'image/svg+xml' };
+        response.writeHead(200, { 'Content-Type': contentTypes[finalPath.slice(finalPath.lastIndexOf('.'))] ?? 'text/html' });
+        response.end(readFileSync(finalPath));
+        return;
+    }
+
+    response.setHeader('Content-Type', 'application/json');
     sendJson(response, 404, { error: 'Not found' });
 });
 
-const port = Number(process.env.API_PORT ?? 3001);
-server.listen(port, () => console.log(`Aster catalog API running at http://localhost:${port}`));
+const port = Number(process.env.PORT ?? process.env.API_PORT ?? 3001);
+server.listen(port, () => console.log(`Aster storefront running on port ${port}`));
