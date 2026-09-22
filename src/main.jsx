@@ -4,6 +4,8 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { gsap } from 'gsap';
 import appleLogo from '../images.png';
+import iphoneWhite from '../IMG-18066212_m_jpeg_1_f7f55888-1186-4669-b65a-e1286d02fb4c.webp';
+import iphoneOrange from '../IMG-18066245_m_jpeg_1.webp';
 import './style.css';
 
 function ProductScene() {
@@ -63,7 +65,7 @@ function ProductScene() {
 
 const products = [
     ['Mac', 'From $999', 'product-mac', '⌘', 'MacBook Air', 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=900&q=85'],
-    ['iPhone', 'From $799', 'product-phone', '●', 'iPhone 17', 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=85'],
+    ['iPhone', 'From $799', 'product-phone', '●', 'iPhone 17', iphoneWhite],
     ['iPad', 'From $599', 'product-ipad', '▣', 'iPad Air', 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=900&q=85'],
     ['Watch', 'From $399', 'product-watch', '◉', 'Apple Watch Series 11', 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=900&q=85'],
     ['AirPods', 'From $249', 'product-airpods', '◌', 'AirPods Pro', 'https://images.unsplash.com/photo-1606220945770-b5b6c2c55bf1?auto=format&fit=crop&w=900&q=85'],
@@ -108,9 +110,9 @@ function CartPanel({ onClose, onCartChange }) {
 }
 
 const newProducts = [
-    { eyebrow: 'New generation', name: 'iPhone 17 Pro', text: 'Pro performance. Built for the moments that matter.', action: 'Explore iPhone', image: products[1][5], className: 'slide-phone' },
+    { eyebrow: 'New generation', name: 'iPhone 17 Pro', text: 'Pro performance. Built for the moments that matter.', action: 'Explore iPhone', image: iphoneWhite, className: 'slide-phone' },
     { eyebrow: 'Now available', name: 'MacBook Air', text: 'Light, bright, and ready for everything ahead.', action: 'Explore Mac', image: products[0][5], className: 'slide-mac' },
-    { eyebrow: 'Just arrived', name: 'Apple Watch Series 11', text: 'A healthier way to live your day, beautifully.', action: 'Explore Watch', image: products[3][5], className: 'slide-watch' },
+    { eyebrow: 'Just arrived', name: 'iPhone 17 Pro · Orange', text: 'A bold new finish for a powerful new generation.', action: 'Explore iPhone', image: iphoneOrange, className: 'slide-phone slide-orange' },
 ];
 
 function NewProductSlideshow() {

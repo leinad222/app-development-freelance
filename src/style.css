@@ -817,6 +817,11 @@ input:focus-visible {
     background: radial-gradient(circle at 30% 50%, #59617a, #13151a 62%);
 }
 
+.slide-orange {
+    border-color: #a85f2d;
+    background: radial-gradient(circle at 30% 50%, #d47a37, #21100a 62%);
+}
+
 .slide-mac {
     border: 9px solid #c6c8cf;
     background: #717987;
