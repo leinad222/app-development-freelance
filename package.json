@@ -1,0 +1,22 @@
+{
+  "scripts": {
+    "dev": "vite",
+    "api": "node server.js",
+    "dev:full": "concurrently \"npm run api\" \"npm run dev\"",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "type": "module",
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "gsap": "^3.15.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "three": "^0.186.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.1.1",
+    "concurrently": "^9.2.4",
+    "vite": "^8.3.0"
+  }
+}
