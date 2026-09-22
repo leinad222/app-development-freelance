@@ -483,6 +483,48 @@ input:focus-visible {
     letter-spacing: -.07em;
 }
 
+.catalogue-intro {
+    max-width: 560px;
+    margin: 15px 0 0;
+    color: #6e6e73;
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.category-filters {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    overflow-x: auto;
+    padding-bottom: 5px;
+    scrollbar-width: thin;
+}
+
+.category-filters button {
+    flex: 0 0 auto;
+    border: 1px solid #d2d2d7;
+    border-radius: 20px;
+    padding: 9px 15px;
+    color: #6e6e73;
+    background: transparent;
+    cursor: pointer;
+    font-size: 13px;
+    transition: color .2s, background .2s, border-color .2s;
+}
+
+.category-filters button:hover,
+.category-filters button.active {
+    border-color: #1d1d1f;
+    color: #fff;
+    background: #1d1d1f;
+}
+
+.catalogue-message {
+    padding: 54px 20px;
+    color: #6e6e73;
+    text-align: center;
+}
+
 .section-heading>.text-link {
     position: absolute;
     right: 0;
@@ -565,6 +607,18 @@ input:focus-visible {
 
 .product-airpods {
     background: #f8dfd4;
+}
+
+.product-home {
+    background: #e7e0d6;
+}
+
+.product-airtag {
+    background: #e4e9dc;
+}
+
+.product-accessories {
+    background: #e3e3e8;
 }
 
 .product-add {

@@ -132,6 +132,33 @@ function NewProductSlideshow() {
     </div>;
 }
 
+const categoryMarks = { Mac: '⌘', iPhone: '●', iPad: '▣', Watch: '◉', AirPods: '◌', 'TV & Home': '⌂', AirTag: '○', Accessories: '＋' };
+const categoryClasses = { Mac: 'product-mac', iPhone: 'product-phone', iPad: 'product-ipad', Watch: 'product-watch', AirPods: 'product-airpods', 'TV & Home': 'product-home', AirTag: 'product-airtag', Accessories: 'product-accessories' };
+
+function ProductCatalogue({ onAdded }) {
+    const [catalogue, setCatalogue] = useState([]);
+    const [activeCategory, setActiveCategory] = useState('All');
+    const [isLoading, setIsLoading] = useState(true);
+    const [hasError, setHasError] = useState(false);
+    useEffect(() => {
+        fetch('/api/products')
+            .then((response) => { if (!response.ok) throw new Error('Catalogue unavailable'); return response.json(); })
+            .then((data) => setCatalogue(data.products ?? []))
+            .catch(() => setHasError(true))
+            .finally(() => setIsLoading(false));
+    }, []);
+    const categories = ['All', ...new Set(catalogue.map((product) => product.category))];
+    const visibleProducts = activeCategory === 'All' ? catalogue : catalogue.filter((product) => product.category === activeCategory);
+    const addProduct = async (product) => { await addProductToCart(product.id); onAdded(product.name); };
+    return <div className="catalogue-shell">
+        <div className="category-filters" role="tablist" aria-label="Filter products by category">{categories.map((category) => <button className={category === activeCategory ? 'active' : ''} role="tab" aria-selected={category === activeCategory} onClick={() => setActiveCategory(category)} key={category}>{category}</button>)}</div>
+        {isLoading && <p className="catalogue-message">Loading the latest product catalogue...</p>}
+        {hasError && <p className="catalogue-message">We could not load the catalogue. Please try again shortly.</p>}
+        {!isLoading && !hasError && <div className="product-grid">{visibleProducts.map((product) => <article className={`product-card ${categoryClasses[product.category] ?? ''}`} key={product.id}><div className="product-image-wrap"><img src={product.image_url} alt={product.name} loading="lazy" /><span className="product-mark">{categoryMarks[product.category] ?? '＋'}</span></div><h3>{product.name}</h3><p>{product.price}</p><button className="product-add" onClick={() => addProduct(product)} aria-label={`Add ${product.name} to bag`}>+</button></article>)}</div>}
+        {!isLoading && !hasError && visibleProducts.length === 0 && <p className="catalogue-message">No products in this category yet.</p>}
+    </div>;
+}
+
 function App() {
     const [accountOpen, setAccountOpen] = useState(false);
     const [cartOpen, setCartOpen] = useState(false);
@@ -144,7 +171,7 @@ function App() {
         <div className="announcement">Free delivery within 60 minutes on orders over $50 <a href="#services">Learn more</a></div>
         <nav className="nav"><a className="logo" href="/" aria-label="Aster home"><img src={appleLogo} alt="" /> <span>aster</span></a><div className="nav-links"><a href="#shop">Shop</a><a href="#new">What's new</a><a href="#services">Services</a><a href="#services">Stores</a></div><div className="nav-actions"><ProductSearch onCartChange={refreshCart} onAdded={showAddedNotice} /><div className="nav-popover-wrap"><button aria-label="Account" onClick={() => setAccountOpen((open) => !open)}>♙</button>{accountOpen && <AccountPanel onClose={() => setAccountOpen(false)} />}</div><div className="nav-popover-wrap"><button aria-label="Shopping bag" onClick={() => setCartOpen((open) => !open)}>▢<span className="cart-count">{cartCount}</span></button>{cartOpen && <CartPanel onClose={() => setCartOpen(false)} onCartChange={refreshCart} />}</div></div></nav>
         <section className="hero"><div className="hero-copy"><p className="eyebrow">Aster Premium Partner</p><h1>Technology<br /><em>made human.</em></h1><p className="hero-text">The best of Apple, with local expertise and service that stays with you.</p><div className="hero-actions"><a className="button primary" href="#shop">Shop Apple</a><a className="text-link" href="#services">Explore services <span>→</span></a></div></div><div className="hero-product"><ProductScene /><span className="hero-label">MacBook Air <b>Light. Bright. Ready.</b></span></div></section>
-        <section className="section" id="shop"><div className="section-heading"><p className="eyebrow">Everything Apple</p><h2>Find your next favourite.</h2><a className="text-link" href="#new">View all products <span>→</span></a></div><div className="product-grid">{products.map(([name, price, className, mark, productName, imageUrl]) => <article className={`product-card ${className}`} key={name}><div className="product-image-wrap"><img src={imageUrl} alt={productName} loading="lazy" /><span className="product-mark">{mark}</span></div><h3>{name}</h3><p>{price}</p><button className="product-add" onClick={async () => { const response = await fetch('/api/products?q=' + encodeURIComponent(productName)); const data = await response.json(); if (data.products[0]) { await addProductToCart(data.products[0].id); refreshCart(); showAddedNotice(productName); } }} aria-label={`Add ${productName} to bag`}>+</button></article>)}</div></section>
+        <section className="section" id="shop"><div className="section-heading"><p className="eyebrow">Apple catalogue</p><h2>Find your next favourite.</h2><p className="catalogue-intro">Explore the latest products, accessories, and home essentials available through Aster.</p></div><ProductCatalogue onAdded={(name) => { refreshCart(); showAddedNotice(name); }} /></section>
         <section className="new-section" id="new"><div className="section-heading"><p className="eyebrow">Just landed</p><h2>See what's new.</h2></div><NewProductSlideshow /></section>
         <section className="service-section" id="services"><div className="section-heading"><p className="eyebrow">More than a store</p><h2>Here when you need us.</h2></div><div className="service-grid">{services.map(([title, text, link]) => <article className="service-card" key={title}><span className="service-icon">✦</span><h3>{title}</h3><p>{text}</p><a className="text-link" href="#services">{link} <span>→</span></a></article>)}</div></section>
         {notice && <div className="cart-notice" role="status">✓ {notice}</div>}
