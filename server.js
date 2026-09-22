@@ -32,27 +32,46 @@ database.exec(`
     );
 `);
 
+try {
+    database.exec('ALTER TABLE products ADD COLUMN image_url TEXT');
+} catch (error) {
+    if (!String(error.message).includes('duplicate column name')) throw error;
+}
+
 const productCount = database.prepare('SELECT COUNT(*) AS count FROM products').get().count;
 if (productCount === 0) {
-    const seed = database.prepare('INSERT INTO products (name, category, price, description) VALUES (?, ?, ?, ?)');
+    const seed = database.prepare('INSERT INTO products (name, category, price, description, image_url) VALUES (?, ?, ?, ?, ?)');
     const seedProducts = [
-        ['MacBook Air', 'Mac', 'From $999', 'Thin, light, and ready for anything.'],
-        ['Mac mini', 'Mac', 'From $599', 'More power in a smaller space.'],
-        ['iPhone 17 Pro', 'iPhone', 'From $999', 'Pro performance in every frame.'],
-        ['iPhone 17', 'iPhone', 'From $799', 'A brilliant everyday iPhone.'],
-        ['iPad Air', 'iPad', 'From $599', 'Powerful, portable, and versatile.'],
-        ['Apple Watch Series 11', 'Watch', 'From $399', 'A healthier way to live your day.'],
-        ['AirPods Pro', 'AirPods', 'From $249', 'Immersive sound with active noise cancellation.'],
-        ['Magic Keyboard', 'Accessories', 'From $99', 'A comfortable partner for your Mac.'],
+        ['MacBook Air', 'Mac', 'From $999', 'Thin, light, and ready for anything.', 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=900&q=85'],
+        ['Mac mini', 'Mac', 'From $599', 'More power in a smaller space.', 'https://images.unsplash.com/photo-1593640408182-31c70c8268f5?auto=format&fit=crop&w=900&q=85'],
+        ['iPhone 17 Pro', 'iPhone', 'From $999', 'Pro performance in every frame.', 'https://images.unsplash.com/photo-1592286927505-2fd0b9f7e6c0?auto=format&fit=crop&w=900&q=85'],
+        ['iPhone 17', 'iPhone', 'From $799', 'A brilliant everyday iPhone.', 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=85'],
+        ['iPad Air', 'iPad', 'From $599', 'Powerful, portable, and versatile.', 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=900&q=85'],
+        ['Apple Watch Series 11', 'Watch', 'From $399', 'A healthier way to live your day.', 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=900&q=85'],
+        ['AirPods Pro', 'AirPods', 'From $249', 'Immersive sound with active noise cancellation.', 'https://images.unsplash.com/photo-1606220945770-b5b6c2c55bf1?auto=format&fit=crop&w=900&q=85'],
+        ['Magic Keyboard', 'Accessories', 'From $99', 'A comfortable partner for your Mac.', 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=900&q=85'],
     ];
     const insertMany = database.transaction((items) => items.forEach((item) => seed.run(...item)));
     insertMany(seedProducts);
 }
 
+const productImages = {
+    'MacBook Air': 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=900&q=85',
+    'Mac mini': 'https://images.unsplash.com/photo-1593640408182-31c70c8268f5?auto=format&fit=crop&w=900&q=85',
+    'iPhone 17 Pro': 'https://images.unsplash.com/photo-1592286927505-2fd0b9f7e6c0?auto=format&fit=crop&w=900&q=85',
+    'iPhone 17': 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=85',
+    'iPad Air': 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=900&q=85',
+    'Apple Watch Series 11': 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=900&q=85',
+    'AirPods Pro': 'https://images.unsplash.com/photo-1606220945770-b5b6c2c55bf1?auto=format&fit=crop&w=900&q=85',
+    'Magic Keyboard': 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=900&q=85',
+};
+const updateImages = database.prepare("UPDATE products SET image_url = ? WHERE name = ? AND (image_url IS NULL OR image_url = '')");
+Object.entries(productImages).forEach(([name, imageUrl]) => updateImages.run(imageUrl, name));
+
 database.prepare('INSERT OR IGNORE INTO users (id, name, email) VALUES (1, ?, ?)').run('Alex Morgan', 'alex@example.com');
 
 const searchProducts = database.prepare(`
-    SELECT id, name, category, price, description
+    SELECT id, name, category, price, description, image_url
     FROM products
     WHERE name LIKE ? OR category LIKE ? OR description LIKE ?
     ORDER BY name

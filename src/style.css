@@ -30,14 +30,6 @@ a {
     background: #f5f5f7;
 }
 
-.announcement {
-    padding: 9px 5vw;
-    color: #fff;
-    background: #1d1d1f;
-    font: 500 11px 'DM Mono', monospace;
-    text-align: center;
-}
-
 .announcement a {
     margin-left: 10px;
     color: #a8c7ff;
@@ -46,17 +38,6 @@ a {
 .nav {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    width: min(1240px, 90vw);
-    margin: 0 auto;
-    padding: 22px 0;
-    border-bottom: 1px solid #dedee1;
-}
-
-.logo {
-    display: flex;
-    align-items: center;
-    gap: 9px;
     color: #1d1d1f;
     font-size: 18px;
     font-weight: 600;
@@ -65,7 +46,14 @@ a {
 }
 
 .logo span {
-    font-size: 20px;
+    font-size: 18px;
+}
+
+.logo img {
+    width: 19px;
+    height: 22px;
+    object-fit: contain;
+    mix-blend-mode: multiply;
 }
 
 .nav-links {
@@ -476,8 +464,8 @@ a {
 
 .product-card {
     position: relative;
-    min-height: 245px;
-    padding: 22px;
+    min-height: 280px;
+    padding: 18px;
     overflow: hidden;
     color: #1d1d1f;
     text-decoration: none;
@@ -495,16 +483,35 @@ a {
     font-size: 13px;
 }
 
-.product-mark {
+.product-image-wrap {
+    position: relative;
     display: grid;
-    width: 72px;
-    height: 112px;
+    height: 145px;
     place-items: center;
-    border-radius: 20px;
+    overflow: hidden;
+    border-radius: 13px;
+    background: rgba(255, 255, 255, .56);
+}
+
+.product-image-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    mix-blend-mode: multiply;
+}
+
+.product-mark {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    display: grid;
+    width: 38px;
+    height: 38px;
+    place-items: center;
+    border-radius: 50%;
     color: #fff;
-    background: #1d1d1f;
-    font-size: 34px;
-    box-shadow: 12px 16px 25px rgba(0, 0, 0, .12);
+    background: rgba(29, 29, 31, .8);
+    font-size: 18px;
 }
 
 .product-card {
@@ -527,29 +534,27 @@ a {
     background: #f8dfd4;
 }
 
-.product-phone .product-mark {
-    background: #4475d8;
-    border-radius: 28px;
+.product-add {
+    position: absolute;
+    right: 17px;
+    bottom: 17px;
+    display: grid;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    color: #fff;
+    background: #0071e3;
+    cursor: pointer;
+    font-size: 22px;
+    line-height: 1;
+    transition: transform .2s, background .2s;
 }
 
-.product-ipad .product-mark {
-    background: #73777f;
-}
-
-.product-watch .product-mark {
-    width: 62px;
-    height: 86px;
-    background: #368d79;
-}
-
-.product-airpods .product-mark {
-    width: 62px;
-    height: 86px;
-    background: #e58d66;
-}
-
-.product-mac .product-mark {
-    background: #8d83c8;
+.product-add:hover {
+    background: #005bb5;
+    transform: scale(1.1);
 }
 
 .card-arrow {
