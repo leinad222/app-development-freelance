@@ -34,6 +34,32 @@ Aster brings product discovery, expert support, delivery, store pickup, account 
 - SQLite with `better-sqlite3`
 - Render deployment blueprint
 
+## Product CRUD API
+
+The SQLite catalogue follows standard CRUD principles:
+
+| Operation | Method | Endpoint | Access |
+| --- | --- | --- | --- |
+| Create | `POST` | `/api/products` | `ADMIN_API_KEY` |
+| Read collection/search | `GET` | `/api/products?q=Mac` | Public |
+| Read one | `GET` | `/api/products/:id` | Public |
+| Update | `PUT` or `PATCH` | `/api/products/:id` | `ADMIN_API_KEY` |
+| Delete | `DELETE` | `/api/products/:id` | `ADMIN_API_KEY` |
+
+Write requests require the `x-admin-key` header and the `ADMIN_API_KEY` environment variable on the server. Product writes use this JSON shape:
+
+```json
+{
+	"name": "MacBook Air",
+	"category": "Mac",
+	"price": "From $999",
+	"description": "Thin, light, and ready for anything.",
+	"image_url": "https://example.com/product-image.jpg"
+}
+```
+
+The account and cart APIs are also persisted in SQLite. Cart operations require an authenticated session, so product management and customer data remain separate responsibilities.
+
 ## Run Locally
 
 ```bash

@@ -10,6 +10,7 @@ const distPath = join(process.cwd(), 'dist');
 mkdirSync(dirname(databasePath), { recursive: true });
 const database = new Database(databasePath);
 database.pragma('journal_mode = WAL');
+database.pragma('foreign_keys = ON');
 database.exec(`
     CREATE TABLE IF NOT EXISTS products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -127,6 +128,10 @@ const searchProducts = database.prepare(`
     ORDER BY name
     LIMIT 100
 `);
+const getProductById = database.prepare('SELECT id, name, category, price, description, image_url FROM products WHERE id = ?');
+const insertProduct = database.prepare('INSERT INTO products (name, category, price, description, image_url) VALUES (?, ?, ?, ?, ?)');
+const updateProduct = database.prepare('UPDATE products SET name = ?, category = ?, price = ?, description = ?, image_url = ? WHERE id = ?');
+const deleteProduct = database.prepare('DELETE FROM products WHERE id = ?');
 const getAccount = database.prepare('SELECT id, name, email FROM users WHERE id = ?');
 const getCart = database.prepare(`
     SELECT cart_items.id, cart_items.quantity, products.id AS product_id, products.name, products.category, products.price
@@ -165,6 +170,21 @@ const readBody = async (request) => {
 const sendJson = (response, status, payload) => {
     response.writeHead(status);
     response.end(JSON.stringify(payload));
+};
+const productPayload = (body) => {
+    const product = {
+        name: String(body.name ?? '').trim(),
+        category: String(body.category ?? '').trim(),
+        price: String(body.price ?? '').trim(),
+        description: String(body.description ?? '').trim(),
+        image_url: String(body.image_url ?? '').trim(),
+    };
+    if (!product.name || !product.category || !product.price || !product.description) return null;
+    return product;
+};
+const isAdmin = (request) => {
+    const expectedKey = process.env.ADMIN_API_KEY;
+    return Boolean(expectedKey && request.headers['x-admin-key'] === expectedKey);
 };
 
 const server = createServer(async (request, response) => {
@@ -230,6 +250,46 @@ const server = createServer(async (request, response) => {
         const pattern = `%${query}%`;
         const products = searchProducts.all(pattern, pattern, pattern);
         sendJson(response, 200, { products });
+        return;
+    }
+
+    const productMatch = requestUrl.pathname.match(/^\/api\/products\/(\d+)$/);
+    if (productMatch && request.method === 'GET') {
+        response.setHeader('Content-Type', 'application/json');
+        const product = getProductById.get(Number(productMatch[1]));
+        if (!product) { sendJson(response, 404, { error: 'Product not found.' }); return; }
+        sendJson(response, 200, { product });
+        return;
+    }
+
+    if ((requestUrl.pathname === '/api/products' && request.method === 'POST') || (productMatch && ['PUT', 'PATCH'].includes(request.method))) {
+        response.setHeader('Content-Type', 'application/json');
+        if (!isAdmin(request)) { sendJson(response, 401, { error: 'Admin API key required.' }); return; }
+        try {
+            const body = await readBody(request);
+            const product = productPayload(body);
+            if (!product) { sendJson(response, 400, { error: 'name, category, price, and description are required.' }); return; }
+            if (request.method === 'POST') {
+                const result = insertProduct.run(product.name, product.category, product.price, product.description, product.image_url);
+                sendJson(response, 201, { product: getProductById.get(result.lastInsertRowid) });
+                return;
+            }
+            const id = Number(productMatch[1]);
+            if (!getProductById.get(id)) { sendJson(response, 404, { error: 'Product not found.' }); return; }
+            updateProduct.run(product.name, product.category, product.price, product.description, product.image_url, id);
+            sendJson(response, 200, { product: getProductById.get(id) });
+        } catch {
+            sendJson(response, 400, { error: 'Invalid product payload.' });
+        }
+        return;
+    }
+
+    if (productMatch && request.method === 'DELETE') {
+        response.setHeader('Content-Type', 'application/json');
+        if (!isAdmin(request)) { sendJson(response, 401, { error: 'Admin API key required.' }); return; }
+        const result = deleteProduct.run(Number(productMatch[1]));
+        if (!result.changes) { sendJson(response, 404, { error: 'Product not found.' }); return; }
+        sendJson(response, 200, { ok: true });
         return;
     }
 
