@@ -361,6 +361,116 @@ input:focus-visible {
     text-align: center;
 }
 
+.admin-panel {
+    width: 360px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.admin-key-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-top: 14px;
+    color: #6e6e73;
+    font-size: 12px;
+}
+
+.admin-key-wrap input,
+.admin-form input,
+.admin-form textarea {
+    width: 100%;
+    border: 1px solid #d2d2d7;
+    border-radius: 8px;
+    padding: 10px 11px;
+    color: #1d1d1f;
+    background: #f5f5f7;
+    font: inherit;
+}
+
+.admin-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.admin-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+.admin-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.admin-cancel {
+    padding-right: 14px;
+    padding-left: 14px;
+}
+
+.admin-message {
+    margin: 0;
+    color: #1d1d1f;
+    font-size: 12px;
+}
+
+.admin-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.admin-list h4 {
+    margin: 0;
+    font-size: 12px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: #6e6e73;
+}
+
+.admin-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 0;
+    border-top: 1px solid #e5e5e7;
+}
+
+.admin-row b {
+    display: block;
+    font-size: 14px;
+}
+
+.admin-row small {
+    color: #6e6e73;
+    font-size: 11px;
+}
+
+.admin-row-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.admin-row-actions button {
+    border: 1px solid #d2d2d7;
+    border-radius: 16px;
+    padding: 6px 10px;
+    color: #1d1d1f;
+    background: #fff;
+    cursor: pointer;
+    font-size: 11px;
+}
+
+.admin-row-actions button.danger {
+    color: #b3261e;
+    border-color: #e0b7b3;
+}
+
 .account-button,
 .checkout-button {
     border: 0;

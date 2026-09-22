@@ -123,6 +123,80 @@ function CartPanel({ onClose, onCartChange }) {
     return <div className="popover cart-panel"><div className="popover-heading"><b>Your bag</b><button onClick={onClose} aria-label="Close bag">×</button></div>{items.length === 0 ? <p className="search-message">Your bag is empty.</p> : items.map((item) => <div className="cart-item" key={item.id}><span><b>{item.name}</b><small>{item.category} · Qty {item.quantity}</small></span><button onClick={() => removeItem(item.id)} aria-label={`Remove ${item.name}`}>×</button></div>)}{items.length > 0 && <button className="button primary checkout-button">Checkout</button>}</div>;
 }
 
+function AdminPanel({ onClose }) {
+    const [adminKey, setAdminKey] = useState('');
+    const [products, setProducts] = useState([]);
+    const [form, setForm] = useState({ name: '', category: 'Mac', price: 'From $', description: '', image_url: '' });
+    const [editingId, setEditingId] = useState(null);
+    const [message, setMessage] = useState('');
+
+    const loadProducts = async () => {
+        const response = await fetch('/api/products');
+        const data = await response.json();
+        setProducts(data.products ?? []);
+    };
+
+    useEffect(() => { loadProducts(); }, []);
+
+    const submitProduct = async (event) => {
+        event.preventDefault();
+        if (!adminKey) {
+            setMessage('Enter the admin API key first.');
+            return;
+        }
+        const payload = { ...form, price: form.price.trim() || 'From $0' };
+        const method = editingId ? 'PUT' : 'POST';
+        const url = editingId ? `/api/products/${editingId}` : '/api/products';
+        const response = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+            body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            setMessage(data.error ?? 'Unable to save product.');
+            return;
+        }
+        setMessage(editingId ? 'Product updated.' : 'Product created.');
+        setEditingId(null);
+        setForm({ name: '', category: 'Mac', price: 'From $', description: '', image_url: '' });
+        await loadProducts();
+    };
+
+    const removeProduct = async (id) => {
+        if (!adminKey) {
+            setMessage('Enter the admin API key first.');
+            return;
+        }
+        const response = await fetch(`/api/products/${id}`, { method: 'DELETE', headers: { 'x-admin-key': adminKey } });
+        const data = await response.json();
+        if (!response.ok) {
+            setMessage(data.error ?? 'Unable to delete product.');
+            return;
+        }
+        setMessage('Product deleted.');
+        if (editingId === id) {
+            setEditingId(null);
+            setForm({ name: '', category: 'Mac', price: 'From $', description: '', image_url: '' });
+        }
+        await loadProducts();
+    };
+
+    const startEdit = (product) => {
+        setEditingId(product.id);
+        setForm({
+            name: product.name,
+            category: product.category,
+            price: product.price,
+            description: product.description,
+            image_url: product.image_url ?? '',
+        });
+        setMessage('Editing product details.');
+    };
+
+    return <div className="popover admin-panel"><div className="popover-heading"><b>Admin</b><button onClick={onClose} aria-label="Close admin panel">×</button></div><div className="admin-key-wrap"><label htmlFor="admin-key">Admin API key</label><input id="admin-key" type="password" value={adminKey} onChange={(event) => setAdminKey(event.target.value)} placeholder="Enter ADMIN_API_KEY" /></div><form className="admin-form" onSubmit={submitProduct}><div className="admin-fields"><input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Product name" aria-label="Product name" /><input value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} placeholder="Category" aria-label="Category" /><input value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} placeholder="Price" aria-label="Price" /><textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder="Description" aria-label="Description" rows="3" /><input value={form.image_url} onChange={(event) => setForm({ ...form, image_url: event.target.value })} placeholder="Image URL" aria-label="Image URL" /></div><div className="admin-actions"><button className="button primary" type="submit">{editingId ? 'Save changes' : 'Add product'}</button>{editingId && <button className="button dark admin-cancel" type="button" onClick={() => { setEditingId(null); setForm({ name: '', category: 'Mac', price: 'From $', description: '', image_url: '' }); }}>Cancel</button>}</div>{message && <p className="admin-message">{message}</p>}</form><div className="admin-list"><h4>Products</h4>{products.length === 0 ? <p className="search-message">No products loaded.</p> : products.map((product) => <div className="admin-row" key={product.id}><div><b>{product.name}</b><small>{product.category}</small></div><div className="admin-row-actions"><button onClick={() => startEdit(product)} aria-label={`Edit ${product.name}`}>Edit</button><button className="danger" onClick={() => removeProduct(product.id)} aria-label={`Delete ${product.name}`}>Delete</button></div></div>)}</div></div>;
+}
+
 const newProducts = [
     { eyebrow: 'New generation', name: 'iPhone 17 Pro', text: 'Pro performance. Built for the moments that matter.', action: 'Explore iPhone', image: iphoneWhite, className: 'slide-phone' },
     { eyebrow: 'Now available', name: 'MacBook Air', text: 'Light, bright, and ready for everything ahead.', action: 'Explore Mac', image: products[0][5], className: 'slide-mac' },
@@ -181,6 +255,7 @@ function ProductCatalogue({ onAdded }) {
 function App() {
     const [accountOpen, setAccountOpen] = useState(false);
     const [cartOpen, setCartOpen] = useState(false);
+    const [adminOpen, setAdminOpen] = useState(false);
     const [cartCount, setCartCount] = useState(0);
     const [notice, setNotice] = useState('');
     const refreshCart = () => fetch('/api/cart').then((response) => response.json()).then((data) => setCartCount(data.count ?? 0));
@@ -188,7 +263,7 @@ function App() {
     useEffect(() => { refreshCart(); }, []);
     return <main className="storefront">
         <div className="announcement">Free delivery within 60 minutes on orders over $50 <a href="#services">Learn more</a></div>
-        <nav className="nav"><a className="logo" href="/" aria-label="Aster home"><img src={appleLogo} alt="" /> <span>ASTER</span></a><div className="nav-links"><a href="#shop">Shop</a><a href="#new">What's new</a><a href="#services">Services</a><a href="#services">Stores</a></div><div className="nav-actions"><ProductSearch onCartChange={refreshCart} onAdded={showAddedNotice} /><div className="nav-popover-wrap"><button aria-label="Account" onClick={() => setAccountOpen((open) => !open)}>♙</button>{accountOpen && <AccountPanel onClose={() => setAccountOpen(false)} />}</div><div className="nav-popover-wrap"><button aria-label="Shopping bag" onClick={() => setCartOpen((open) => !open)}>▢<span className="cart-count">{cartCount}</span></button>{cartOpen && <CartPanel onClose={() => setCartOpen(false)} onCartChange={refreshCart} />}</div></div></nav>
+        <nav className="nav"><a className="logo" href="/" aria-label="Aster home"><img src={appleLogo} alt="" /> <span>ASTER</span></a><div className="nav-links"><a href="#shop">Shop</a><a href="#new">What's new</a><a href="#services">Services</a><a href="#services">Stores</a></div><div className="nav-actions"><ProductSearch onCartChange={refreshCart} onAdded={showAddedNotice} /><div className="nav-popover-wrap"><button aria-label="Admin tools" onClick={() => setAdminOpen((open) => !open)}>⚙</button>{adminOpen && <AdminPanel onClose={() => setAdminOpen(false)} />}</div><div className="nav-popover-wrap"><button aria-label="Account" onClick={() => setAccountOpen((open) => !open)}>♙</button>{accountOpen && <AccountPanel onClose={() => setAccountOpen(false)} />}</div><div className="nav-popover-wrap"><button aria-label="Shopping bag" onClick={() => setCartOpen((open) => !open)}>▢<span className="cart-count">{cartCount}</span></button>{cartOpen && <CartPanel onClose={() => setCartOpen(false)} onCartChange={refreshCart} />}</div></div></nav>
         <section className="hero"><div className="hero-copy"><p className="eyebrow">Aster Premium Partner</p><h1>Technology<br /><em>made human.</em></h1><p className="hero-text">The best of Apple, with local expertise and service that stays with you.</p><div className="hero-actions"><a className="button primary" href="#shop">Shop Apple</a><a className="text-link" href="#services">Explore services <span>→</span></a></div></div><div className="hero-product"><ProductScene /><span className="hero-label">MacBook Air <b>Light. Bright. Ready.</b></span></div></section>
         <section className="section" id="shop"><div className="section-heading"><p className="eyebrow">Apple catalogue</p><h2>Find your next favourite.</h2><p className="catalogue-intro">Explore the latest products, accessories, and home essentials available through Aster.</p></div><ProductCatalogue onAdded={(name) => { refreshCart(); showAddedNotice(name); }} /></section>
         <section className="new-section" id="new"><div className="section-heading"><p className="eyebrow">Just landed</p><h2>See what's new.</h2></div><NewProductSlideshow /></section>
