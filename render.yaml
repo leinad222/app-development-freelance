@@ -3,6 +3,7 @@ services:
     name: aster-storefront
     runtime: node
     plan: starter
+    branch: main
     buildCommand: npm ci && npm run build
     startCommand: npm start
     healthCheckPath: /
