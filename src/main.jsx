@@ -107,6 +107,29 @@ function CartPanel({ onClose, onCartChange }) {
     return <div className="popover cart-panel"><div className="popover-heading"><b>Your bag</b><button onClick={onClose} aria-label="Close bag">×</button></div>{items.length === 0 ? <p className="search-message">Your bag is empty.</p> : items.map((item) => <div className="cart-item" key={item.id}><span><b>{item.name}</b><small>{item.category} · Qty {item.quantity}</small></span><button onClick={() => removeItem(item.id)} aria-label={`Remove ${item.name}`}>×</button></div>)}{items.length > 0 && <button className="button primary checkout-button">Checkout</button>}</div>;
 }
 
+const newProducts = [
+    { eyebrow: 'New generation', name: 'iPhone 17 Pro', text: 'Pro performance. Built for the moments that matter.', action: 'Explore iPhone', image: products[1][5], className: 'slide-phone' },
+    { eyebrow: 'Now available', name: 'MacBook Air', text: 'Light, bright, and ready for everything ahead.', action: 'Explore Mac', image: products[0][5], className: 'slide-mac' },
+    { eyebrow: 'Just arrived', name: 'Apple Watch Series 11', text: 'A healthier way to live your day, beautifully.', action: 'Explore Watch', image: products[3][5], className: 'slide-watch' },
+];
+
+function NewProductSlideshow() {
+    const [activeSlide, setActiveSlide] = useState(0);
+    const [isPaused, setIsPaused] = useState(false);
+    useEffect(() => {
+        if (isPaused) return undefined;
+        const timer = window.setInterval(() => setActiveSlide((slide) => (slide + 1) % newProducts.length), 5000);
+        return () => window.clearInterval(timer);
+    }, [isPaused]);
+    const slide = newProducts[activeSlide];
+    const moveSlide = (direction) => setActiveSlide((current) => (current + direction + newProducts.length) % newProducts.length);
+    return <div className="feature-banner" onMouseEnter={() => setIsPaused(true)} onMouseLeave={() => setIsPaused(false)} onFocus={() => setIsPaused(true)} onBlur={() => setIsPaused(false)} aria-roledescription="carousel" aria-label="Featured new products">
+        <div className="feature-copy" key={slide.name}><p className="eyebrow">{slide.eyebrow}</p><h2>{slide.name}</h2><p>{slide.text}</p><a className="button dark" href="#shop">{slide.action}</a></div>
+        <div className={`feature-product-art ${slide.className}`}><img src={slide.image} alt={slide.name} /></div>
+        <div className="slide-controls"><button onClick={() => moveSlide(-1)} aria-label="Previous product">←</button><div className="slide-dots">{newProducts.map((item, index) => <button className={index === activeSlide ? 'active' : ''} onClick={() => setActiveSlide(index)} aria-label={`Show ${item.name}`} key={item.name} />)}</div><button onClick={() => moveSlide(1)} aria-label="Next product">→</button></div>
+    </div>;
+}
+
 function App() {
     const [accountOpen, setAccountOpen] = useState(false);
     const [cartOpen, setCartOpen] = useState(false);
@@ -118,7 +141,7 @@ function App() {
         <nav className="nav"><a className="logo" href="/" aria-label="Aster home"><img src={appleLogo} alt="" /> <span>aster</span></a><div className="nav-links"><a href="#shop">Shop</a><a href="#new">What's new</a><a href="#services">Services</a><a href="#stores">Stores</a></div><div className="nav-actions"><ProductSearch onCartChange={refreshCart} /><div className="nav-popover-wrap"><button aria-label="Account" onClick={() => setAccountOpen((open) => !open)}>♙</button>{accountOpen && <AccountPanel onClose={() => setAccountOpen(false)} />}</div><div className="nav-popover-wrap"><button aria-label="Shopping bag" onClick={() => setCartOpen((open) => !open)}>▢<span className="cart-count">{cartCount}</span></button>{cartOpen && <CartPanel onClose={() => setCartOpen(false)} onCartChange={refreshCart} />}</div></div></nav>
         <section className="hero"><div className="hero-copy"><p className="eyebrow">Aster Premium Partner</p><h1>Technology<br /><em>made human.</em></h1><p className="hero-text">The best of Apple, with local expertise and service that stays with you.</p><div className="hero-actions"><a className="button primary" href="#shop">Shop Apple</a><a className="text-link" href="#services">Explore services <span>→</span></a></div></div><div className="hero-product"><ProductScene /><span className="hero-label">MacBook Air <b>Light. Bright. Ready.</b></span></div></section>
         <section className="section" id="shop"><div className="section-heading"><p className="eyebrow">Everything Apple</p><h2>Find your next favourite.</h2><a className="text-link" href="#new">View all products <span>→</span></a></div><div className="product-grid">{products.map(([name, price, className, mark, productName, imageUrl]) => <article className={`product-card ${className}`} key={name}><div className="product-image-wrap"><img src={imageUrl} alt={productName} loading="lazy" /><span className="product-mark">{mark}</span></div><h3>{name}</h3><p>{price}</p><button className="product-add" onClick={async () => { const response = await fetch('/api/products?q=' + encodeURIComponent(productName)); const data = await response.json(); if (data.products[0]) { await addProductToCart(data.products[0].id); refreshCart(); } }} aria-label={`Add ${productName} to bag`}>+</button></article>)}</div></section>
-        <section className="new-section" id="new"><div className="section-heading"><p className="eyebrow">Just landed</p><h2>See what's new.</h2></div><div className="feature-banner"><div><p className="eyebrow">New generation</p><h2>iPhone 17 Pro</h2><p>Pro performance. Built for the moments that matter.</p><a className="button dark" href="#shop">Explore iPhone</a></div><div className="phone-art"><div className="phone-camera" /></div></div></section>
+        <section className="new-section" id="new"><div className="section-heading"><p className="eyebrow">Just landed</p><h2>See what's new.</h2></div><NewProductSlideshow /></section>
         <section className="service-section" id="services"><div className="section-heading"><p className="eyebrow">More than a store</p><h2>Here when you need us.</h2></div><div className="service-grid">{services.map(([title, text, link]) => <article className="service-card" key={title}><span className="service-icon">✦</span><h3>{title}</h3><p>{text}</p><a className="text-link" href="#services">{link} <span>→</span></a></article>)}</div></section>
         <footer className="footer"><div><a className="logo" href="/" aria-label="Aster home"><img src={appleLogo} alt="" /> <span>aster</span></a><p>Apple Premium Partner</p></div><div className="footer-columns"><div><b>Shop</b><a href="#shop">Mac</a><a href="#shop">iPhone</a><a href="#shop">iPad</a></div><div><b>Services</b><a href="#services">Repairs</a><a href="#services">Trade in</a><a href="#stores">Find a store</a></div><div><b>About</b><a href="#services">Contact us</a><a href="#services">Workshops</a><a href="#services">Support</a></div></div><small>© 2026 Aster. This is an independent concept.</small></footer>
     </main>;
