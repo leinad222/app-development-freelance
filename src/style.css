@@ -80,6 +80,7 @@ input:focus-visible {
     display: flex;
     gap: 32px;
     margin-left: 80px;
+    margin-right: 28px;
 }
 
 .nav-links a {
@@ -93,7 +94,7 @@ input:focus-visible {
 
 .nav-actions {
     display: flex;
-    gap: 17px;
+    gap: 20px;
 }
 
 .nav-actions button,
