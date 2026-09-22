@@ -534,6 +534,40 @@ input:focus-visible {
     text-align: center;
 }
 
+.catalogue-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 0 12px;
+    color: #6e6e73;
+    font: 500 11px 'DM Mono', monospace;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+}
+
+.catalogue-controls div {
+    display: flex;
+    gap: 8px;
+}
+
+.catalogue-controls button {
+    display: grid;
+    width: 36px;
+    height: 36px;
+    place-items: center;
+    border: 1px solid #d2d2d7;
+    border-radius: 50%;
+    color: #1d1d1f;
+    background: #fff;
+    cursor: pointer;
+    font-size: 18px;
+}
+
+.catalogue-controls button:hover {
+    color: #fff;
+    background: #1d1d1f;
+}
+
 .section-heading>.text-link {
     position: absolute;
     right: 0;
@@ -544,6 +578,23 @@ input:focus-visible {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 12px;
+}
+
+.catalogue-grid {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    padding: 2px 4px 18px;
+    scroll-behavior: smooth;
+    scroll-snap-type: x mandatory;
+    scrollbar-color: #b6b6bb transparent;
+    scrollbar-width: thin;
+}
+
+.catalogue-grid .product-card {
+    flex: 0 0 calc((100% - 42px) / 4);
+    min-width: 235px;
+    scroll-snap-align: start;
 }
 
 .product-card {
@@ -957,6 +1008,10 @@ input:focus-visible {
         grid-template-columns: repeat(2, 1fr);
     }
 
+    .catalogue-grid .product-card {
+        flex-basis: min(72vw, 280px);
+    }
+
     .product-card:last-child {
         grid-column: span 2;
     }
@@ -1073,6 +1128,10 @@ input:focus-visible {
 
     .product-grid {
         grid-template-columns: 1fr;
+    }
+
+    .catalogue-grid .product-card {
+        flex-basis: 78vw;
     }
 
     .product-card:last-child {

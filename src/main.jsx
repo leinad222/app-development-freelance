@@ -136,6 +136,7 @@ const categoryMarks = { Mac: '⌘', iPhone: '●', iPad: '▣', Watch: '◉', Ai
 const categoryClasses = { Mac: 'product-mac', iPhone: 'product-phone', iPad: 'product-ipad', Watch: 'product-watch', AirPods: 'product-airpods', 'TV & Home': 'product-home', AirTag: 'product-airtag', Accessories: 'product-accessories' };
 
 function ProductCatalogue({ onAdded }) {
+    const productGridRef = useRef(null);
     const [catalogue, setCatalogue] = useState([]);
     const [activeCategory, setActiveCategory] = useState('All');
     const [isLoading, setIsLoading] = useState(true);
@@ -150,11 +151,12 @@ function ProductCatalogue({ onAdded }) {
     const categories = ['All', ...new Set(catalogue.map((product) => product.category))];
     const visibleProducts = activeCategory === 'All' ? catalogue : catalogue.filter((product) => product.category === activeCategory);
     const addProduct = async (product) => { await addProductToCart(product.id); onAdded(product.name); };
+    const scrollProducts = (direction) => productGridRef.current?.scrollBy({ left: direction * 320, behavior: 'smooth' });
     return <div className="catalogue-shell">
         <div className="category-filters" role="tablist" aria-label="Filter products by category">{categories.map((category) => <button className={category === activeCategory ? 'active' : ''} role="tab" aria-selected={category === activeCategory} onClick={() => setActiveCategory(category)} key={category}>{category}</button>)}</div>
         {isLoading && <p className="catalogue-message">Loading the latest product catalogue...</p>}
         {hasError && <p className="catalogue-message">We could not load the catalogue. Please try again shortly.</p>}
-        {!isLoading && !hasError && <div className="product-grid">{visibleProducts.map((product) => <article className={`product-card ${categoryClasses[product.category] ?? ''}`} key={product.id}><div className="product-image-wrap"><img src={product.image_url} alt={product.name} loading="lazy" /><span className="product-mark">{categoryMarks[product.category] ?? '＋'}</span></div><h3>{product.name}</h3><p>{product.price}</p><button className="product-add" onClick={() => addProduct(product)} aria-label={`Add ${product.name} to bag`}>+</button></article>)}</div>}
+        {!isLoading && !hasError && <><div className="catalogue-controls"><span>{visibleProducts.length} products</span><div><button onClick={() => scrollProducts(-1)} aria-label="Scroll products left">←</button><button onClick={() => scrollProducts(1)} aria-label="Scroll products right">→</button></div></div><div className="product-grid catalogue-grid" ref={productGridRef}>{visibleProducts.map((product) => <article className={`product-card ${categoryClasses[product.category] ?? ''}`} key={product.id}><div className="product-image-wrap"><img src={product.image_url} alt={product.name} loading="lazy" /><span className="product-mark">{categoryMarks[product.category] ?? '＋'}</span></div><h3>{product.name}</h3><p>{product.price}</p><button className="product-add" onClick={() => addProduct(product)} aria-label={`Add ${product.name} to bag`}>+</button></article>)}</div></>}
         {!isLoading && !hasError && visibleProducts.length === 0 && <p className="catalogue-message">No products in this category yet.</p>}
     </div>;
 }
