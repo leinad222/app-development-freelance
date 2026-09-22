@@ -68,6 +68,38 @@ const productImages = {
 const updateImages = database.prepare("UPDATE products SET image_url = ? WHERE name = ? AND (image_url IS NULL OR image_url = '')");
 Object.entries(productImages).forEach(([name, imageUrl]) => updateImages.run(imageUrl, name));
 
+const catalogueProducts = [
+    ['MacBook Pro 14-inch', 'Mac', 'From $1,599', 'Pro performance for demanding creative workflows.', productImages['MacBook Air']],
+    ['MacBook Pro 16-inch', 'Mac', 'From $2,499', 'Maximum performance for the biggest ideas.', productImages['MacBook Air']],
+    ['iMac', 'Mac', 'From $1,299', 'A powerful all-in-one for home and work.', productImages['MacBook Air']],
+    ['Mac Studio', 'Mac', 'From $1,999', 'Serious power for professional studios.', productImages['Mac mini']],
+    ['iPhone 17 Pro Max', 'iPhone', 'From $1,199', 'The ultimate iPhone camera and battery experience.', productImages['iPhone 17 Pro']],
+    ['iPhone 17e', 'iPhone', 'From $599', 'The essential iPhone experience.', productImages['iPhone 17']],
+    ['iPad Pro', 'iPad', 'From $999', 'The ultimate iPad for professional work.', productImages['iPad Air']],
+    ['iPad', 'iPad', 'From $349', 'Colourful, capable, and made for everyday life.', productImages['iPad Air']],
+    ['iPad mini', 'iPad', 'From $499', 'The full iPad experience in a compact design.', productImages['iPad Air']],
+    ['Apple Watch Ultra 3', 'Watch', 'From $799', 'The most rugged and capable Apple Watch.', productImages['Apple Watch Series 11']],
+    ['Apple Watch SE', 'Watch', 'From $249', 'Essential features and great value.', productImages['Apple Watch Series 11']],
+    ['AirPods Max', 'AirPods', 'From $549', 'High-fidelity audio with a personal fit.', productImages['AirPods Pro']],
+    ['AirPods 4', 'AirPods', 'From $129', 'A redesigned everyday listening experience.', productImages['AirPods Pro']],
+    ['Apple TV 4K', 'TV & Home', 'From $129', 'Cinema-quality entertainment at home.', productImages['Mac mini']],
+    ['HomePod', 'TV & Home', 'From $299', 'Room-filling sound with Siri built in.', productImages['AirPods Pro']],
+    ['HomePod mini', 'TV & Home', 'From $99', 'Big sound in a small package.', productImages['AirPods Pro']],
+    ['AirTag', 'AirTag', 'From $29', 'Keep track of your everyday essentials.', productImages['AirPods Pro']],
+    ['Magic Mouse', 'Accessories', 'From $79', 'A smooth, rechargeable partner for Mac.', productImages['Magic Keyboard']],
+    ['Magic Trackpad', 'Accessories', 'From $129', 'A spacious surface for precise control.', productImages['Magic Keyboard']],
+    ['Apple Pencil Pro', 'Accessories', 'From $129', 'Bring your ideas to life on iPad.', productImages['iPad Air']],
+    ['Apple Pencil USB-C', 'Accessories', 'From $79', 'A simple, versatile stylus for iPad.', productImages['iPad Air']],
+    ['iPhone Silicone Case', 'Accessories', 'From $49', 'A protective case with a soft-touch finish.', productImages['iPhone 17']],
+    ['USB-C Charge Cable', 'Accessories', 'From $19', 'A reliable cable for charging and data.', productImages['MacBook Air']],
+];
+const addMissingProduct = database.prepare('INSERT INTO products (name, category, price, description, image_url) VALUES (?, ?, ?, ?, ?)');
+const hasProduct = database.prepare('SELECT id FROM products WHERE name = ?');
+const addMissingProducts = database.transaction((items) => items.forEach((item) => {
+    if (!hasProduct.get(item[0])) addMissingProduct.run(...item);
+}));
+addMissingProducts(catalogueProducts);
+
 database.prepare('INSERT OR IGNORE INTO users (id, name, email) VALUES (1, ?, ?)').run('Alex Morgan', 'alex@example.com');
 
 const searchProducts = database.prepare(`
@@ -75,7 +107,7 @@ const searchProducts = database.prepare(`
     FROM products
     WHERE name LIKE ? OR category LIKE ? OR description LIKE ?
     ORDER BY name
-    LIMIT 8
+    LIMIT 100
 `);
 const getAccount = database.prepare('SELECT id, name, email FROM users WHERE id = 1');
 const getCart = database.prepare(`
