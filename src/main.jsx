@@ -123,9 +123,11 @@ function NewProductSlideshow() {
     }, [isPaused]);
     const slide = newProducts[activeSlide];
     const moveSlide = (direction) => setActiveSlide((current) => (current + direction + newProducts.length) % newProducts.length);
-    return <div className="feature-banner" onMouseEnter={() => setIsPaused(true)} onMouseLeave={() => setIsPaused(false)} onFocus={() => setIsPaused(true)} onBlur={() => setIsPaused(false)} aria-roledescription="carousel" aria-label="Featured new products">
-        <div className="feature-copy" key={slide.name}><p className="eyebrow">{slide.eyebrow}</p><h2>{slide.name}</h2><p>{slide.text}</p><a className="button dark" href="#shop">{slide.action}</a></div>
-        <div className={`feature-product-art ${slide.className}`}><img src={slide.image} alt={slide.name} /></div>
+    return <div className="slideshow-shell" onMouseEnter={() => setIsPaused(true)} onMouseLeave={() => setIsPaused(false)} onFocus={() => setIsPaused(true)} onBlur={() => setIsPaused(false)}>
+        <div className="feature-banner" aria-roledescription="carousel" aria-label="Featured new products">
+            <div className="feature-copy" key={slide.name}><p className="eyebrow">{slide.eyebrow}</p><h2>{slide.name}</h2><p>{slide.text}</p><a className="button dark" href="#shop">{slide.action}</a></div>
+            <div className={`feature-product-art ${slide.className}`}><img src={slide.image} alt={slide.name} /></div>
+        </div>
         <div className="slide-controls"><button onClick={() => moveSlide(-1)} aria-label="Previous product">←</button><div className="slide-dots">{newProducts.map((item, index) => <button className={index === activeSlide ? 'active' : ''} onClick={() => setActiveSlide(index)} aria-label={`Show ${item.name}`} key={item.name} />)}</div><button onClick={() => moveSlide(1)} aria-label="Next product">→</button></div>
     </div>;
 }
