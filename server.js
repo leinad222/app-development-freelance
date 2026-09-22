@@ -2,6 +2,8 @@ import { createServer } from 'node:http';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import Database from 'better-sqlite3';
+import { randomBytes } from 'node:crypto';
+import bcrypt from 'bcryptjs';
 
 const databasePath = join(process.cwd(), 'data', 'aster.sqlite');
 const distPath = join(process.cwd(), 'dist');
@@ -37,6 +39,20 @@ try {
 } catch (error) {
     if (!String(error.message).includes('duplicate column name')) throw error;
 }
+
+try {
+    database.exec('ALTER TABLE users ADD COLUMN password_hash TEXT');
+} catch (error) {
+    if (!String(error.message).includes('duplicate column name')) throw error;
+}
+database.exec(`
+    CREATE TABLE IF NOT EXISTS sessions (
+        token TEXT PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(user_id) REFERENCES users(id)
+    )
+`);
 
 const productCount = database.prepare('SELECT COUNT(*) AS count FROM products').get().count;
 if (productCount === 0) {
@@ -100,7 +116,9 @@ const addMissingProducts = database.transaction((items) => items.forEach((item) 
 }));
 addMissingProducts(catalogueProducts);
 
-database.prepare('INSERT OR IGNORE INTO users (id, name, email) VALUES (1, ?, ?)').run('Alex Morgan', 'alex@example.com');
+const demoPasswordHash = bcrypt.hashSync('aster-demo', 10);
+database.prepare('INSERT OR IGNORE INTO users (id, name, email, password_hash) VALUES (1, ?, ?, ?)').run('Alex Morgan', 'alex@example.com', demoPasswordHash);
+database.prepare('UPDATE users SET password_hash = ? WHERE id = 1 AND password_hash IS NULL').run(demoPasswordHash);
 
 const searchProducts = database.prepare(`
     SELECT id, name, category, price, description, image_url
@@ -109,17 +127,34 @@ const searchProducts = database.prepare(`
     ORDER BY name
     LIMIT 100
 `);
-const getAccount = database.prepare('SELECT id, name, email FROM users WHERE id = 1');
+const getAccount = database.prepare('SELECT id, name, email FROM users WHERE id = ?');
 const getCart = database.prepare(`
     SELECT cart_items.id, cart_items.quantity, products.id AS product_id, products.name, products.category, products.price
     FROM cart_items JOIN products ON products.id = cart_items.product_id
-    WHERE cart_items.user_id = 1 ORDER BY cart_items.id DESC
+    WHERE cart_items.user_id = ? ORDER BY cart_items.id DESC
 `);
 const addCartItem = database.prepare(`
-    INSERT INTO cart_items (user_id, product_id, quantity) VALUES (1, ?, 1)
+    INSERT INTO cart_items (user_id, product_id, quantity) VALUES (?, ?, 1)
     ON CONFLICT(user_id, product_id) DO UPDATE SET quantity = quantity + 1
 `);
-const removeCartItem = database.prepare('DELETE FROM cart_items WHERE id = ? AND user_id = 1');
+const removeCartItem = database.prepare('DELETE FROM cart_items WHERE id = ? AND user_id = ?');
+const findSession = database.prepare('SELECT user_id FROM sessions WHERE token = ?');
+const findUserByEmail = database.prepare('SELECT id, name, email, password_hash FROM users WHERE lower(email) = lower(?)');
+const createUser = database.prepare('INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)');
+const createSession = database.prepare('INSERT INTO sessions (token, user_id) VALUES (?, ?)');
+const deleteSession = database.prepare('DELETE FROM sessions WHERE token = ?');
+
+const parseCookies = (request) => Object.fromEntries((request.headers.cookie ?? '').split(';').filter(Boolean).map((item) => {
+    const [key, ...value] = item.trim().split('=');
+    return [key, decodeURIComponent(value.join('='))];
+}));
+const getCurrentUser = (request) => {
+    const token = parseCookies(request).aster_session;
+    const session = token ? findSession.get(token) : null;
+    return session ? session.user_id : null;
+};
+const setSessionCookie = (response, token) => response.setHeader('Set-Cookie', `aster_session=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=604800`);
+const clearSessionCookie = (response) => response.setHeader('Set-Cookie', 'aster_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0');
 
 const readBody = async (request) => {
     let body = '';
@@ -135,6 +170,60 @@ const sendJson = (response, status, payload) => {
 const server = createServer(async (request, response) => {
     const requestUrl = new URL(request.url, 'http://localhost');
 
+    if (requestUrl.pathname === '/api/auth/register' && request.method === 'POST') {
+        response.setHeader('Content-Type', 'application/json');
+        try {
+            const body = await readBody(request);
+            const name = String(body.name ?? '').trim();
+            const email = String(body.email ?? '').trim().toLowerCase();
+            const password = String(body.password ?? '');
+            if (name.length < 2 || !/^\S+@\S+\.\S+$/.test(email) || password.length < 8) {
+                sendJson(response, 400, { error: 'Use a name, valid email, and password of at least 8 characters.' });
+                return;
+            }
+            if (findUserByEmail.get(email)) {
+                sendJson(response, 409, { error: 'An account with that email already exists.' });
+                return;
+            }
+            const result = createUser.run(name, email, bcrypt.hashSync(password, 12));
+            const token = randomBytes(32).toString('hex');
+            createSession.run(token, result.lastInsertRowid);
+            setSessionCookie(response, token);
+            sendJson(response, 201, { account: { id: result.lastInsertRowid, name, email } });
+        } catch {
+            sendJson(response, 400, { error: 'Unable to create account.' });
+        }
+        return;
+    }
+
+    if (requestUrl.pathname === '/api/auth/login' && request.method === 'POST') {
+        response.setHeader('Content-Type', 'application/json');
+        try {
+            const body = await readBody(request);
+            const user = findUserByEmail.get(String(body.email ?? '').trim().toLowerCase());
+            if (!user?.password_hash || !bcrypt.compareSync(String(body.password ?? ''), user.password_hash)) {
+                sendJson(response, 401, { error: 'Email or password is incorrect.' });
+                return;
+            }
+            const token = randomBytes(32).toString('hex');
+            createSession.run(token, user.id);
+            setSessionCookie(response, token);
+            sendJson(response, 200, { account: { id: user.id, name: user.name, email: user.email } });
+        } catch {
+            sendJson(response, 400, { error: 'Unable to sign in.' });
+        }
+        return;
+    }
+
+    if (requestUrl.pathname === '/api/auth/logout' && request.method === 'POST') {
+        response.setHeader('Content-Type', 'application/json');
+        const token = parseCookies(request).aster_session;
+        if (token) deleteSession.run(token);
+        clearSessionCookie(response);
+        sendJson(response, 200, { ok: true });
+        return;
+    }
+
     if (requestUrl.pathname === '/api/products' && request.method === 'GET') {
         response.setHeader('Content-Type', 'application/json');
         const query = requestUrl.searchParams.get('q')?.trim() ?? '';
@@ -146,13 +235,18 @@ const server = createServer(async (request, response) => {
 
     if (requestUrl.pathname === '/api/account' && request.method === 'GET') {
         response.setHeader('Content-Type', 'application/json');
-        sendJson(response, 200, { account: getAccount.get(), cartCount: getCart.all().reduce((total, item) => total + item.quantity, 0) });
+        const userId = getCurrentUser(request);
+        if (!userId) { sendJson(response, 401, { error: 'Sign in required.' }); return; }
+        const items = getCart.all(userId);
+        sendJson(response, 200, { account: getAccount.get(userId), cartCount: items.reduce((total, item) => total + item.quantity, 0) });
         return;
     }
 
     if (requestUrl.pathname === '/api/cart' && request.method === 'GET') {
         response.setHeader('Content-Type', 'application/json');
-        const items = getCart.all();
+        const userId = getCurrentUser(request);
+        if (!userId) { sendJson(response, 401, { error: 'Sign in required.' }); return; }
+        const items = getCart.all(userId);
         sendJson(response, 200, { items, count: items.reduce((total, item) => total + item.quantity, 0) });
         return;
     }
@@ -160,14 +254,16 @@ const server = createServer(async (request, response) => {
     if (requestUrl.pathname === '/api/cart' && request.method === 'POST') {
         response.setHeader('Content-Type', 'application/json');
         try {
+            const userId = getCurrentUser(request);
+            if (!userId) { sendJson(response, 401, { error: 'Sign in required.' }); return; }
             const body = await readBody(request);
             const productId = Number(body.productId);
             if (!Number.isInteger(productId) || !database.prepare('SELECT id FROM products WHERE id = ?').get(productId)) {
                 sendJson(response, 400, { error: 'A valid productId is required' });
                 return;
             }
-            addCartItem.run(productId);
-            sendJson(response, 201, { items: getCart.all() });
+            addCartItem.run(userId, productId);
+            sendJson(response, 201, { items: getCart.all(userId) });
         } catch {
             sendJson(response, 400, { error: 'Invalid request body' });
         }
@@ -177,8 +273,10 @@ const server = createServer(async (request, response) => {
     const cartItemMatch = requestUrl.pathname.match(/^\/api\/cart\/(\d+)$/);
     if (cartItemMatch && request.method === 'DELETE') {
         response.setHeader('Content-Type', 'application/json');
-        removeCartItem.run(Number(cartItemMatch[1]));
-        sendJson(response, 200, { items: getCart.all() });
+        const userId = getCurrentUser(request);
+        if (!userId) { sendJson(response, 401, { error: 'Sign in required.' }); return; }
+        removeCartItem.run(Number(cartItemMatch[1]), userId);
+        sendJson(response, 200, { items: getCart.all(userId) });
         return;
     }
 

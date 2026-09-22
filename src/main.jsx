@@ -97,8 +97,22 @@ function ProductSearch({ onCartChange, onAdded }) {
 
 function AccountPanel({ onClose }) {
     const [account, setAccount] = useState(null);
-    useEffect(() => { fetch('/api/account').then((response) => response.json()).then((data) => setAccount(data.account)); }, []);
-    return <div className="popover account-panel"><div className="popover-heading"><b>Your account</b><button onClick={onClose} aria-label="Close account">×</button></div>{account ? <><div className="account-avatar">{account.name.slice(0, 1)}</div><h3>{account.name}</h3><p>{account.email}</p><button className="button primary account-button">Manage account</button></> : <p className="search-message">Loading account...</p>}</div>;
+    const [mode, setMode] = useState('login');
+    const [form, setForm] = useState({ name: '', email: '', password: '' });
+    const [message, setMessage] = useState('');
+    const loadAccount = () => fetch('/api/account').then((response) => response.ok ? response.json() : null).then((data) => setAccount(data?.account ?? null));
+    useEffect(() => { loadAccount(); }, []);
+    const submit = async (event) => {
+        event.preventDefault();
+        setMessage('');
+        const response = await fetch(`/api/auth/${mode}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
+        const data = await response.json();
+        if (!response.ok) { setMessage(data.error ?? 'Please check your details.'); return; }
+        setAccount(data.account);
+        setForm({ name: '', email: '', password: '' });
+    };
+    const logout = async () => { await fetch('/api/auth/logout', { method: 'POST' }); setAccount(null); };
+    return <div className="popover account-panel"><div className="popover-heading"><b>{account ? 'Your account' : mode === 'login' ? 'Sign in' : 'Create account'}</b><button onClick={onClose} aria-label="Close account">×</button></div>{account ? <><div className="account-avatar">{account.name.slice(0, 1)}</div><h3>{account.name}</h3><p>{account.email}</p><button className="button primary account-button" onClick={logout}>Sign out</button></> : <form className="account-form" onSubmit={submit}>{mode === 'register' && <input required minLength="2" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Full name" aria-label="Full name" />}<input required type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="Email address" aria-label="Email address" /><input required minLength="8" type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder="Password (8+ characters)" aria-label="Password" />{message && <p className="account-error" role="alert">{message}</p>}<button className="button primary account-button" type="submit">{mode === 'login' ? 'Sign in' : 'Register'}</button><button className="account-switch" type="button" onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setMessage(''); }}>{mode === 'login' ? 'Need an account? Register' : 'Already registered? Sign in'}</button>{mode === 'login' && <small className="demo-hint">Demo: alex@example.com / aster-demo</small>}</form>}</div>;
 }
 
 function CartPanel({ onClose, onCartChange }) {
